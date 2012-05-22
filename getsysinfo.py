@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 from datetime import datetime,timedelta
-#from dmidecode import system
-#from MySQLdb import OperationalError
 from re import match,split
 from socket import getfqdn,gethostname
 from subprocess import *
 from sys import exit,stderr
 from time import mktime,sleep,strftime,strptime
-from urllib2 import urlopen
 
 def defsystem():
+    '''Retrieve basic system information'''
     sysinfo={}
     #Serial
     serial_cmd="dmidecode -s system-serial-number"
@@ -35,20 +33,11 @@ def defsystem():
 	    sku=""
     sysinfo['sku']=sku 
 
-	#if '0x0100' in system():
-		#key='0x0100'
-	#else:
-		#key='0x0001'
-#
-	#SKU=system()[key]['data']['SKU Number']
-	#serial=system()[key]['data']['Serial Number']
-	#product_name=system()[key]['data']['Product Name']
-	#vendor=system()[key]['data']['Manufacturer']
-
     sysinfo={'sku':sku,'serial':serial,'product_name':pn,'vendor':vendor}
     return sysinfo
 
 def getwarranty():
+    '''Upload information to vendor sites and return with warranty data'''
     sysinfo=defsystem()
     host=gethostname()
     vendor=sysinfo['vendor'].lower()
