@@ -50,8 +50,9 @@ def getwarranty():
 
     sleep(1)
     if "dell" in vendor:
-        url=("http://support.dell.com/support/topics/global.aspx/support/"
-             "my_systems_info/details?c=us&cs=RC956904&l=en&s=hied&servicetag=%s" % serial)
+        url=("http://www.dell.com/support/troubleshooting/us/en/555/"
+	     "TroubleShooting/Display_Warranty_Tab?"
+	     "name=TroubleShooting_WarrantyTab")
     elif "ibm" in vendor:
         url=("http://www-947.ibm.com/support/entry/portal/!ut/p/b1/"
              "04_SjzQ0NLUwN7U0szTXj9CPykssy0xPLMnMz0vMAfGjzOKN3Z2Nv"
@@ -67,23 +68,24 @@ def getwarranty():
         return
 
     if "dell" in vendor:
-        url_cmd="lynx -dump -accept_all_cookies '%s'" % url
+        url_cmd='curl -s -b "OLRProduct=OLRProduct=$(dmidecode -s system-serial-number)|" %s' % url
         output=Popen(url_cmd,shell=True,stdout=PIPE).communicate()[0]
-        lines=split('\n',output)
-        warranty_end=[' '.join(line.split()[0:3]) for line in lines if 'days remaining' in line][0]
-        warranty_start="N/A"
+        lines=split('>|<',output)
+	dates=[convertdate(line) for line in lines if convertdate(line)]
+        #warranty_end=[' '.join(line.split()[0:3]) for line in lines if 'days remaining' in line][0]
+        #warranty_start="N/A"
     else:
         url_cmd="wget -qO- '%s'" % url
         output=Popen(url_cmd,shell=True,stdout=PIPE).communicate()[0]
         lines=split('>|<',output)
         dates=[convertdate(line) for line in lines if convertdate(line)]
     
-        try:
-            warranty_start=strftime("%Y-%m-%d",min(dates))
-            warranty_end=strftime("%Y-%m-%d",max(dates))
-        except:
-            warranty_start=None
-            warranty_end=None
+    try:
+        warranty_start=strftime("%Y-%m-%d",min(dates))
+        warranty_end=strftime("%Y-%m-%d",max(dates))
+    except:
+        warranty_start=None
+        warranty_end=None
 #
         if warranty_start == warranty_end: warranty_start = None
 
@@ -98,7 +100,7 @@ def getwarranty():
 def convertdate(line):
     '''Based on RegEx match, convert date string to time object for future parsing'''
     if match('[\d]{1,2}/[\d]{1,2}/[\d]{4}',line.strip()): 
-        return strptime(line,"%m/%d/%Y")
+        return strptime(line.strip(),"%m/%d/%Y")
     elif match('[\d]{4}-[\d]{1,2}-[\d]{1,2}',line):
         return strptime(line,"%Y-%m-%d")
     elif match('[\d]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [\d]{4}',line):
